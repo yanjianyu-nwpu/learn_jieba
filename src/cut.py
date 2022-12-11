@@ -1,6 +1,9 @@
 import jieba
+import paddle
 
+paddle.enable_static()
 jieba.enable_paddle()
+
 
 strs=["我来到北京清华大学","乒乓球拍卖完了","中国科学技术大学"]
 for str in strs:

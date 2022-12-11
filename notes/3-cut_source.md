@@ -72,7 +72,15 @@
 
 
 - 先使用re_han 将句子切分
+
 - yield 的学习在附件
+
+- 分词算法分成三个
+
+  - __cut_all
+  - __cut_dag_no_hmm
+
+  - __cut_dag
 
 ## 3 其它工具函数/python 基础
 
