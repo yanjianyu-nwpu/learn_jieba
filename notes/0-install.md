@@ -25,3 +25,23 @@ pip debug --verbose
 ```
 pip install .\paddlepaddle_tiny-1.6.1-cp37-abi3-win_amd64.whl  -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
+
+需要安装 paddlepaddle 和 protobuf
+
+```
+pip install paddlepaddle==2.3.2 -i https://mirror.baidu.com/pypi/simple
+```
+
+```
+pip install protobuf==3.20.0 -i https://mirror.baidu.com/pypi/simple
+```
+
+启动的时候需要使用 
+
+```
+import jieba
+import paddle
+paddle.enable_static()
+jieba.enable_paddle()
+```
+
