@@ -1,7 +1,7 @@
 import jieba
 import paddle
 
-paddle.enable_static()
+paddle.enable_static()                                                            
 jieba.enable_paddle()
 
 
