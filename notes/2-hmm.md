@@ -221,5 +221,112 @@ def cut(sentence):
 
 ## 2.2 finalset.__cut
 
-这里
+这里就是核心hmm的实现，首先是用了viterbi算法
+
+```python
+def __cut(sentence):
+    global emit_P
+  	# 这里
+    prob, pos_list = viterbi(sentence, 'BMES', start_P, trans_P, emit_P)
+    begin, nexti = 0, 0
+    # print pos_list, sentence
+    for i, char in enumerate(sentence):
+        pos = pos_list[i]
+        if pos == 'B':
+            begin = i
+        elif pos == 'E':
+            yield sentence[begin:i + 1]
+            nexti = i + 1
+        elif pos == 'S':
+            yield char
+            nexti = i + 1
+    if nexti < len(sentence):
+        yield sentence[nexti:]
+```
+
+
+
+这里先解释这几个字母的意思
+
+- HMM的典型模型是一个五元组:
+  - StatusSet: 状态值集合
+    ObservedSet: 观察值集合
+    TransProbMatrix: 转移概率矩阵
+    EmitProbMatrix: 发射概率矩阵
+    InitStatus: 初始状态分布
+
+- 所以状态值的集合可以有四个 :
+  - 为(B, M, E, S): {B:begin, M:middle, E:end, S:single}。分别代表每个状态代表的是该字在词语中的位置，B代表该字是词语中的起始字，M代表是词语中的中间字，E代表是词语中的结束字，S则代表是单字成词。
+
+
+
+## 2.3 Viterbi
+
+这里输入的发射矩阵和转移矩阵是训练出来的矩阵：以下是 start_P trans_P 
+
+```
+{'B': -0.26268660809250016, 'E': -3.14e+100, 'M': -3.14e+100, 'S': -1.4652633398537678}
+{'B': {'E': -0.51082562376599, 'M': -0.916290731874155}, 'E': {'B': -0.5897149736854513, 'S': -0.8085250474669937}, 'M': {'E': -0.33344856811948514, 'M': -1.2603623820268226}, 'S': {'B': -0.7211965654669841, 'S': -0.6658631448798212}}
+```
+
+然后这里的emit_P也是输入的 对那些单字开始的一概率
+
+
+
+源码
+
+```python
+def viterbi(obs, states, start_p, trans_p, emit_p):
+    V = [{}]  # tabular
+    path = {}
+    for y in states:  # init
+        V[0][y] = start_p[y] + emit_p[y].get(obs[0], MIN_FLOAT)
+        path[y] = [y]
+    for t in xrange(1, len(obs)):
+        V.append({})
+        newpath = {}
+        for y in states:
+            em_p = emit_p[y].get(obs[t], MIN_FLOAT)
+            (prob, state) = max(
+                [(V[t - 1][y0] + trans_p[y0].get(y, MIN_FLOAT) + em_p, y0) for y0 in PrevStatus[y]])
+            V[t][y] = prob
+            newpath[y] = path[state] + [y]
+        path = newpath
+	# 这里的path是最后一个字符，如果是某个状态，之前字符的角色
+    # 因为最后一个字符只能是 e或者 s ，所以会判断 ，选一个结果
+    (prob, state) = max((V[len(obs) - 1][y], y) for y in 'ES')
+
+    return (prob, path[state])
+```
+
+大概情况如下就是上
+
+很有意思的是，这个状态转方程有个对应矩阵
+
+```
+PrevStatus = {
+    'B': 'ES',
+    'M': 'MB',
+    'S': 'SE',
+    'E': 'BM'
+}
+```
+
+那么可以看出 t+1的 ’B‘ 由t的’E‘ 和 ’S‘ 决定，并且是取大值；
+
+
+
+比方说上述的
+
+我分威
+
+```
+[{'B': -5.825987215274368, 'M': -3.14e+100, 'E': -3.14e+100, 'S': -5.977093751850913}, {'B': -12.352122900609341, 'M': -12.980913212539502, 'E': -12.15332204142366, 'S': -13.404775375712308}, {'B': -20.640760367860103, 'M': -21.278112715046454, 'E': -21.058693479833885, 'S': -22.62057916170157}]
+{'B': ['B', 'E', 'B'], 'M': ['S', 'B', 'M'], 'E': ['S', 'B', 'E'], 'S': ['B', 'E', 'S']}
+-21.058693479833885 ['S', 'B', 'E']
+```
+
+上面的 是 V path 和返回的结果  status是E
+
+这里的path是记录如果 t+1 字符是某个状态，最后一个字符只能 E或者S，然后算出是E和S中概率大的，然后从path中找到前t个 字符的角色
 
